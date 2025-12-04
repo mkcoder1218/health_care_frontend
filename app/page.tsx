@@ -1,9 +1,16 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { SectionHeading } from "@/components/ui/section-heading"
-import { VideoEmbed } from "@/components/ui/video-embed"
-import { InfoCard } from "@/components/ui/info-card"
-import { Users, BookOpen, ArrowRight, Heart, Shield, Clock } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { VideoEmbed } from "@/components/ui/video-embed";
+import { InfoCard } from "@/components/ui/info-card";
+import {
+  Users,
+  BookOpen,
+  ArrowRight,
+  Heart,
+  Shield,
+  Clock,
+} from "lucide-react";
 
 export default function HomePage() {
   const mentalHealthVideos = [
@@ -31,25 +38,28 @@ export default function HomePage() {
       url: "https://www.youtube.com/watch?v=8Su5VtKeXU8",
       title: "Breaking the Stigma",
     },
-  ]
+  ];
 
   const advocacyArticles = [
     {
       title: "Mental Health Awareness Month: Breaking Down Barriers",
-      excerpt: "Exploring the importance of mental health awareness and reducing stigma in our communities.",
+      excerpt:
+        "Exploring the importance of mental health awareness and reducing stigma in our communities.",
       date: "March 15, 2024",
     },
     {
       title: "The Impact of Social Media on Youth Mental Health",
-      excerpt: "Understanding how digital connectivity affects the mental wellbeing of young people.",
+      excerpt:
+        "Understanding how digital connectivity affects the mental wellbeing of young people.",
       date: "March 10, 2024",
     },
     {
       title: "Workplace Mental Health: Creating Supportive Environments",
-      excerpt: "How organizations can foster mental health support and reduce workplace stress.",
+      excerpt:
+        "How organizations can foster mental health support and reduce workplace stress.",
       date: "March 5, 2024",
     },
-  ]
+  ];
 
   return (
     <div className="flex flex-col">
@@ -62,17 +72,23 @@ export default function HomePage() {
                 Your Journey to Mental Wellness Starts Here
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed text-pretty">
-                Professional mental health support tailored to your needs. Connect with experienced therapists and
-                counselors who care about your wellbeing.
+                Professional mental health support tailored to your needs.
+                Connect with experienced therapists and counselors who care
+                about your wellbeing.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild className="text-base">
-                  <Link href="/register">
+                  <Link href="/register/client">
                     Get Started Today
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="text-base bg-transparent">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="text-base bg-transparent"
+                >
                   <Link href="/services">Explore Services</Link>
                 </Button>
               </div>
@@ -80,9 +96,16 @@ export default function HomePage() {
             <div className="relative">
               <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 p-8 flex items-center justify-center">
                 <div className="text-center space-y-4">
-                  <Heart className="h-24 w-24 text-primary mx-auto" strokeWidth={1.5} />
-                  <p className="text-lg font-medium text-foreground">Compassionate Care</p>
-                  <p className="text-muted-foreground">Professional support when you need it most</p>
+                  <Heart
+                    className="h-24 w-24 text-primary mx-auto"
+                    strokeWidth={1.5}
+                  />
+                  <p className="text-lg font-medium text-foreground">
+                    Compassionate Care
+                  </p>
+                  <p className="text-muted-foreground">
+                    Professional support when you need it most
+                  </p>
                 </div>
               </div>
             </div>
@@ -150,10 +173,19 @@ export default function HomePage() {
                 key={index}
                 className="rounded-lg border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow"
               >
-                <time className="text-sm text-muted-foreground">{article.date}</time>
-                <h3 className="mt-2 text-xl font-semibold text-foreground mb-3">{article.title}</h3>
-                <p className="text-muted-foreground leading-relaxed mb-4">{article.excerpt}</p>
-                <Link href="#" className="text-primary font-medium hover:underline inline-flex items-center gap-1">
+                <time className="text-sm text-muted-foreground">
+                  {article.date}
+                </time>
+                <h3 className="mt-2 text-xl font-semibold text-foreground mb-3">
+                  {article.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed mb-4">
+                  {article.excerpt}
+                </p>
+                <Link
+                  href="#"
+                  className="text-primary font-medium hover:underline inline-flex items-center gap-1"
+                >
                   Read more
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -171,8 +203,8 @@ export default function HomePage() {
             Are You a Mental Health Professional?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed text-pretty">
-            Join our network of dedicated professionals making a difference in people's lives. Help us expand access to
-            quality mental health care.
+            Join our network of dedicated professionals making a difference in
+            people's lives. Help us expand access to quality mental health care.
           </p>
           <Button size="lg" asChild>
             <Link href="/professional-registration">Join Our Network</Link>
@@ -180,5 +212,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }
