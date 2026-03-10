@@ -9,7 +9,8 @@ export const apiClient = async (path: string, method = 'GET', body?: any) => {
   let headers: Record<string, string> = {};
 
   // Add Authorization header from localStorage if token exists
-  const token = localStorage.getItem('token');
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }

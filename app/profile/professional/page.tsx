@@ -5,7 +5,7 @@ import { api } from "@/integration/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfessionalProfilePage() {
-  const { data: profile, isLoading } = api.profile.getAll({
+  const { data: profile, isLoading, mutate } = api.profile.getAll({
     include: [
       { model: "Role", as: "role" },
       { model: "ProfessionalProfile", as: "professionalProfile" },
@@ -24,5 +24,5 @@ export default function ProfessionalProfilePage() {
     );
   }
 
-  return <ProfileLayout data={profile} type="professional" />;
+  return <ProfileLayout data={profile} type="professional" onRefresh={mutate} />;
 }

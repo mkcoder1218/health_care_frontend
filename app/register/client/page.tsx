@@ -59,6 +59,9 @@ export default function RegisterPage() {
     cardExpiry: "",
     cardCvc: "",
   });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const substanceOptions = [
     "Alcohol",
@@ -84,31 +87,99 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    api.register.create({
-      name: formData?.username,
-      password: formData?.password,
-      phone_number: formData?.phone_number,
-      role_id: role?.data?.find((item) => item?.name === "client")?.id,
-      clientProfile: {
-        age: formData?.age,
-        sex: formData?.sex,
-        marital_status: formData?.maritalStatus,
-        residency: formData?.residency,
-        client_level_id: formData?.clientLevel,
-        client_type_id: formData?.servicePreference,
-        academic_level: formData?.academicLevel,
-        work_status: formData?.workStatus,
-        financial_problem: formData?.financialProblem,
-        substance_use: formData?.substanceUse,
-        problem_description: formData?.problemDescription,
-      },
-    });
-    // Handle registration
+    setFormError(null);
+    setFormSuccess(null);
+
+    const errors = validateStep(4);
+    if (errors.length) {
+      setFormError(errors[0]);
+      return;
+    }
+
+    const roleId =
+      role?.data?.find((item) => item?.name?.toLowerCase() === "user")?.id ||
+      role?.data?.find((item) => item?.name?.toLowerCase() === "client")?.id;
+    if (!roleId) {
+      setFormError("User role not found. Please try again later.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.register.create({
+        name: formData?.username,
+        password: formData?.password,
+        phone_number: formData?.phone_number,
+        role_id: roleId,
+        clientProfile: {
+          age: formData?.age,
+          sex: formData?.sex,
+          marital_status: formData?.maritalStatus,
+          residency: formData?.residency,
+          client_level_id: formData?.clientLevel,
+          client_type_id: formData?.servicePreference,
+          academic_level: formData?.academicLevel,
+          work_status: formData?.workStatus,
+          financial_problem: formData?.financialProblem === "yes",
+          substance_use: formData?.substanceUse,
+          problem_description: formData?.problemDescription,
+        },
+      });
+      setFormSuccess("Registration successful. You can now sign in.");
+    } catch (err: any) {
+      console.error("Registration failed", err);
+      setFormError(err?.message || "Registration failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const validateStep = (step: FormStep) => {
+    const errors: string[] = [];
+    if (step === 1) {
+      if (!formData.username) errors.push("Username is required.");
+      if (!formData.phone_number) errors.push("Phone number is required.");
+      if (!formData.password) errors.push("Password is required.");
+      if (formData.password !== formData.confirmPassword)
+        errors.push("Passwords do not match.");
+    }
+    if (step === 2) {
+      if (!formData.age) errors.push("Age is required.");
+      if (!formData.sex) errors.push("Sex is required.");
+      if (!formData.residency) errors.push("Residency is required.");
+    }
+    if (step === 3) {
+      if (!formData.financialProblem)
+        errors.push("Please indicate financial problem status.");
+      if (!formData.problemDescription)
+        errors.push("Problem description is required.");
+    }
+    if (step === 4) {
+      if (!formData.servicePreference)
+        errors.push("Service preference is required.");
+      if (!formData.clientLevel) errors.push("Client level is required.");
+      if (!formData.appointmentDate)
+        errors.push("Preferred appointment date is required.");
+      if (!formData.appointmentTime)
+        errors.push("Preferred appointment time is required.");
+      if (showPaymentSection) {
+        if (!formData.cardNumber) errors.push("Card number is required.");
+        if (!formData.cardExpiry) errors.push("Card expiry is required.");
+        if (!formData.cardCvc) errors.push("Card CVC is required.");
+      }
+    }
+    return errors;
   };
 
   const nextStep = () => {
+    const errors = validateStep(currentStep);
+    if (errors.length) {
+      setFormError(errors[0]);
+      return;
+    }
+    setFormError(null);
     if (currentStep < 4) setCurrentStep((currentStep + 1) as FormStep);
   };
 
@@ -197,6 +268,16 @@ export default function RegisterPage() {
         {/* Registration Form */}
         <div className="rounded-lg border border-border bg-card p-8 shadow-sm">
           <form onSubmit={handleSubmit}>
+            {formError ? (
+              <div className="mb-6 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+                {formError}
+              </div>
+            ) : null}
+            {formSuccess ? (
+              <div className="mb-6 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                {formSuccess}
+              </div>
+            ) : null}
             {/* Step 1: Account Information */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -308,12 +389,9 @@ export default function RegisterPage() {
                         <SelectValue placeholder="Select sex" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer-not-to-say">
-                          Prefer not to say
-                        </SelectItem>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -542,7 +620,7 @@ export default function RegisterPage() {
                   >
                     {clienttypes?.data?.map((item) => {
                       return (
-                        <div className="flex items-center space-x-2">
+                        <div key={item?.id} className="flex items-center space-x-2">
                           <RadioGroupItem
                             value={item?.id}
                             id="service-online"
@@ -556,15 +634,6 @@ export default function RegisterPage() {
                         </div>
                       );
                     })}
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="face-to-face" id="service-face" />
-                      <Label
-                        htmlFor="service-face"
-                        className="font-normal cursor-pointer"
-                      >
-                        Face-to-Face Sessions (In-Person)
-                      </Label>
-                    </div>
                   </RadioGroup>
                 </div>
                 <div className="space-y-2">
@@ -577,7 +646,7 @@ export default function RegisterPage() {
                   >
                     {clientLevel?.data?.map((item) => {
                       return (
-                        <div className="flex items-center space-x-2">
+                        <div key={item?.id} className="flex items-center space-x-2">
                           <RadioGroupItem
                             value={item?.id}
                             id="service-online"
@@ -748,13 +817,15 @@ export default function RegisterPage() {
                 Previous
               </Button>
 
-              {currentStep < 4 ? (
+                {currentStep < 4 ? (
                 <Button type="button" onClick={nextStep}>
                   Next
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button type="submit">Complete Registration</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting..." : "Complete Registration"}
+                </Button>
               )}
             </div>
           </form>

@@ -5,7 +5,7 @@ import { api } from "@/integration/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ClientProfilePage() {
-  const { data: profile, isLoading } = api.profile.getAll({
+  const { data: profile, isLoading, mutate } = api.profile.getAll({
     include: [
       { model: "Role", as: "role" },
       { model: "ClientProfile", as: "clientProfile" },
@@ -24,5 +24,5 @@ export default function ClientProfilePage() {
     );
   }
 
-  return <ProfileLayout data={profile} type="client" />;
+  return <ProfileLayout data={profile} type="client" onRefresh={mutate} />;
 }

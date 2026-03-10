@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Menu, X, Heart, LogOut, User, Settings } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Menu, X, Heart, LogOut, User, Settings, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/integration/api";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import io from "socket.io-client";
+import { BASE_URL } from "@/integration/config";
+import { encodeQuery } from "@/integration/utils";
+import { mutate } from "swr";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const router = useRouter();
   const { data: profile } = api.profile.getAll({
     include: [
       { model: "Role", as: "role" },
@@ -24,6 +39,21 @@ export function Header() {
       { model: "ProfessionalProfile", as: "professionalProfile" },
     ],
   });
+  const userId = (profile as any)?.user?.id;
+  const role = (profile as any)?.user?.role?.name;
+  const notificationsQuery = useMemo(
+    () => ({
+      filters: userId ? { user_id: userId } : undefined,
+      order: [["createdAt", "DESC"]],
+      limit: 20,
+    }),
+    [userId],
+  );
+  const { data: notificationsData } = api.notification.getAll(
+    userId ? notificationsQuery : undefined,
+  );
+  const notifications = notificationsData?.data || [];
+  const unreadCount = notifications.length;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -36,10 +66,26 @@ export function Header() {
     { name: "About Us", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
+  const roleName = (profile as any)?.user?.role?.name?.toLowerCase?.() || "";
+  const isProfessional = roleName === "professional";
+  const isUser = roleName === "user";
 
   const profileLink = (profile as any)?.user?.professionalProfile
     ? "/profile/professional"
     : "/profile/client";
+
+  useEffect(() => {
+    if (!userId) return;
+    const socket = io(BASE_URL);
+    socket.emit("register-user", { userId, role });
+    socket.on("notification", () => {
+      const key = `/api/notification?q=${encodeQuery(notificationsQuery as any)}`;
+      mutate(key);
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [userId, role, notificationsQuery]);
 
   const UserMenu = () => (
     <DropdownMenu>
@@ -120,16 +166,58 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:gap-8">
-            {navigation.map((item) => (
+            {navigation
+              .filter((item) =>
+                isProfessional ? item.href !== "/services" : true,
+              )
+              .map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {item.name}
+                </Link>
+              ))}
+            {isProfessional && (
               <Link
-                key={item.name}
-                href={item.href}
+                href="/patients"
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
-                {item.name}
+                Patients
               </Link>
-            ))}
+            )}
             <div className="flex items-center gap-3">
+              {(profile as any)?.user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 ? (
+                        <span className="absolute -top-1 -right-1 h-5 min-w-[20px] rounded-full bg-rose-500 text-white text-xs flex items-center justify-center px-1">
+                          {unreadCount}
+                        </span>
+                      ) : null}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80" align="end" forceMount>
+                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {notifications.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No notifications yet.
+                      </div>
+                    ) : (
+                      notifications.map((note: any) => (
+                        <DropdownMenuItem key={note.id} className="flex flex-col items-start gap-1">
+                          <span className="text-sm font-semibold">{note.title}</span>
+                          <span className="text-xs text-muted-foreground">{note.message}</span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
               {(profile as any)?.user ? (
                 <UserMenu />
               ) : (
@@ -137,8 +225,8 @@ export function Header() {
                   <Button variant="ghost" asChild>
                     <Link href="/login">Login</Link>
                   </Button>
-                  <Button asChild>
-                    <Link href="/register/client">Register</Link>
+                  <Button onClick={() => setRegisterOpen(true)}>
+                    Register
                   </Button>
                 </>
               )}
@@ -165,7 +253,11 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-4">
-              {navigation.map((item) => (
+              {navigation
+                .filter((item) =>
+                  isProfessional ? item.href !== "/services" : true,
+                )
+                .map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -175,6 +267,15 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+              {isProfessional && (
+                <Link
+                  href="/patients"
+                  className="text-base font-medium text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Patients
+                </Link>
+              )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 {(profile as any)?.user ? (
                   <div className="flex flex-col gap-2">
@@ -227,13 +328,14 @@ export function Header() {
                         Login
                       </Link>
                     </Button>
-                    <Button asChild className="w-full">
-                      <Link
-                        href="/register/client"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Register
-                      </Link>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setRegisterOpen(true);
+                      }}
+                    >
+                      Register
                     </Button>
                   </>
                 )}
@@ -242,6 +344,64 @@ export function Header() {
           </div>
         )}
       </nav>
+
+      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Select account type</DialogTitle>
+            <DialogDescription>
+              Choose the type of account you want to create.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <User className="h-4 w-4 text-primary" />
+                  Client Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Register to book services and manage your care.
+                </p>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    setRegisterOpen(false);
+                    router.push("/register/client");
+                  }}
+                >
+                  Continue as Client
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <User className="h-4 w-4 text-primary" />
+                  Professional Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Register to provide services as a professional.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setRegisterOpen(false);
+                    router.push("/register/professional");
+                  }}
+                >
+                  Continue as Professional
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

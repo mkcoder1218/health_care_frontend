@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "lint": "next lint",
     "start": "next start"
   },
@@ -57,7 +57,7 @@
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.4",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "sonner": "^1.7.4",
     "swr": "^2.3.6",
     "tailwind-merge": "^2.5.5",
